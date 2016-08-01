@@ -7,6 +7,7 @@ package main
 import (
 	"bytes"
 	"encoding/json"
+	"encoding/xml"
 	"flag"
 	"fmt"
 	"io/ioutil"
@@ -17,25 +18,48 @@ import (
 
 type MsgInfo struct {
 	//消息属性和内容
-	To, Agentid, Corpid, Corpsecret, Msg, Url string
+	To, Agentid, Corpid, Corpsecret, Msg, Url, Style string
 }
 
 var msgInfo MsgInfo
 
 type Alter struct {
-	From         string `json:"from"`
-	Time         string `json:"time"`
-	Level        string `json:"level"`
-	Name         string `json:"name"`
-	Key          string `json:"key"`
-	Value        string `json:"value"`
-	Now          string `json:"now"`
-	ID           string `json:"id"`
-	IP           string `json:"ip"`
-	Color        string
-	Age          string
-	Status       string
-	RecoveryTime string
+	From         string `json:"from" xml:"from"`
+	Time         string `json:"time" xml:"time"`
+	Level        string `json:"level" xml:"level"`
+	Name         string `json:"name" xml:"name"`
+	Key          string `json:"key" xml:"key"`
+	Value        string `json:"value" xml:"value"`
+	Now          string `json:"now" xml:"now"`
+	ID           string `json:"id" xml:"id"`
+	IP           string `json:"ip" xml:"ip"`
+	Color        string `json:"color" xml:"color"`
+	Age          string `json:"age" xml:"age"`
+	Status       string `json:"status" xml:"status"`
+	RecoveryTime string `json:"recoveryTime" xml:"recoveryTime"`
+}
+type DingMsg struct {
+	Touser  string `json:"touser"`
+	Agentid string `json:"agentid"`
+	Msgtype string `json:"msgtype"`
+	Oa      struct {
+		MessageURL string `json:"message_url"`
+		Head       struct {
+			Bgcolor string `json:"bgcolor"`
+		} `json:"head"`
+		Body struct {
+			Title string `json:"title"`
+			Form  []struct {
+				Key   string `json:"key"`
+				Value string `json:"value"`
+			} `json:"form"`
+			Rich struct {
+				Num string `json:"num"`
+			} `json:"rich"`
+			Content string `json:"content"`
+			Author  string `json:"author"`
+		} `json:"body"`
+	} `json:"oa"`
 }
 
 func init() {
@@ -45,20 +69,50 @@ func init() {
 	flag.StringVar(&msgInfo.Corpsecret, "corpsecret", "", "CorpSecret，可以在钉钉后台查看，不可空。")
 	flag.StringVar(&msgInfo.Msg, "msg", `{ "from": "千思网", "time": "2016.07.28 17:00:05", "level": "Warning", "name": "这是一个千思网（qiansw.com）提供的ZABBIX钉钉报警插件。", "key": "icmpping", "value": "30ms", "now": "56ms", "id": "1637", "ip": "8.8.8.8", "color":"FF4A934A", "age":"3m", "recoveryTime":"2016.07.28 17:03:05", "status":"OK" }`, "Json格式的文本消息内容，不可空。")
 	flag.StringVar(&msgInfo.Url, "url", "http://www.qiansw.com/golang-zabbix-alter-to-dingding.html", "消息内容点击后跳转到的URL，可空。")
+	flag.StringVar(&msgInfo.Style, "style", "json", "Msg的格式，可选json和xml，可空。")
 	flag.Parse()
-
+	msgInfo.Msg = fmt.Sprint(`
+	<?xml version="1.0" encoding="UTF-8" ?><xml>
+	<from>千思网</from>
+	<time>2016.07.28 17:00:05</time>
+	<level>Warning</level>
+	<name>这是一个千思网（qiansw.com）提供的ZABBIX&quot;钉钉&quot;报警插件。</name>
+	<key>icmpping</key>
+	<value>30ms</value>
+	<now>56ms</now>
+	<id>1637</id>
+	<ip>8.8.8.8</ip>
+	<color>FF4A934A</color>
+	<age>3m</age>
+	<recoveryTime>2016.07.28 17:03:05</recoveryTime>
+	<status>OK</status></xml>`)
 }
 
 func makeMsg(msg string) string {
-	//	根据json文本创建消息体
-
+	//	根据json或xml文本创建消息体
 	var alter Alter
-	err := json.Unmarshal([]byte(msg), &alter)
-	if err != nil {
-		log.Fatal(err)
-	}
+	if msgInfo.Style == "xml" {
+		err := xml.Unmarshal([]byte(msg), &alter)
+		if err != nil {
+			log.Fatal(err)
+		}
 
+	} else {
+		err := json.Unmarshal([]byte(msg), &alter)
+		if err != nil {
+			log.Fatal(err)
+		}
+	}
+	fmt.Printf("alter=%s", alter)
 	if alter.Status == "PROBLEM" {
+		var dingMsg DingMsg
+		dingMsg.Touser = msgInfo.To
+dingMsg.Agentid=msgInfo.Agentid
+dingMsg.Msgtype="oa"
+dingMsg.Oa.MessageURL=msgInfo.Url
+dingMsg.Oa.Head.Bgcolor=alter.Color
+dingMsg.Oa.Body.Title=alter.Name
+dingMsg.Oa.Body.Form=
 		JsonMsg := fmt.Sprintf(`
 		{
 		"touser":"%s",
@@ -309,5 +363,6 @@ func sendMsg(token, msg string) (status bool) { //发送OA消息，,返回成功
 }
 
 func main() {
+	fmt.Print(makeMsg(msgInfo.Msg))
 	sendMsg(getToken(msgInfo.Corpid, msgInfo.Corpsecret), makeMsg(msgInfo.Msg))
 }
