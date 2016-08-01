@@ -49,7 +49,7 @@ type DingMsg struct {
 		} `json:"head"`
 		Body struct {
 			Title string `json:"title"`
-			Form  []struct {
+			Form  [5]struct {
 				Key   string `json:"key"`
 				Value string `json:"value"`
 			} `json:"form"`
@@ -63,6 +63,7 @@ type DingMsg struct {
 }
 
 func init() {
+	//	log.SetFlags(log.Lshortfile | log.LstdFlags)
 	flag.StringVar(&msgInfo.To, "to", "@all", "消息的接收人，可以在钉钉后台查看，可空。")
 	flag.StringVar(&msgInfo.Agentid, "agentid", "", "AgentID，可以在钉钉后台查看，不可空。")
 	flag.StringVar(&msgInfo.Corpid, "corpid", "", "CorpID，可以在钉钉后台查看，不可空。")
@@ -71,228 +72,92 @@ func init() {
 	flag.StringVar(&msgInfo.Url, "url", "http://www.qiansw.com/golang-zabbix-alter-to-dingding.html", "消息内容点击后跳转到的URL，可空。")
 	flag.StringVar(&msgInfo.Style, "style", "json", "Msg的格式，可选json和xml，可空。")
 	flag.Parse()
+	log.Println("Init：初始化完成。")
 	msgInfo.Msg = fmt.Sprint(`
-	<?xml version="1.0" encoding="UTF-8" ?><xml>
-	<from>千思网</from>
-	<time>2016.07.28 17:00:05</time>
-	<level>Warning</level>
-	<name>这是一个千思网（qiansw.com）提供的ZABBIX&quot;钉钉&quot;报警插件。</name>
-	<key>icmpping</key>
-	<value>30ms</value>
-	<now>56ms</now>
-	<id>1637</id>
-	<ip>8.8.8.8</ip>
-	<color>FF4A934A</color>
-	<age>3m</age>
-	<recoveryTime>2016.07.28 17:03:05</recoveryTime>
-	<status>OK</status></xml>`)
+		<?xml version="1.0" encoding="UTF-8" ?>
+		<xml>
+		<from>千思网</from>
+		<time>2016.07.28 17:00:05</time>
+		<level>Warning</level>
+		<name>这是一个千思网（qiansw.com）提供的ZABBIX"钉钉"报警插件。</name>
+		<key>icmpping</key>
+		<value>30ms</value>
+		<now>56ms</now>
+		<id>1637</id>
+		<ip>8.8.8.8</ip>
+		<color>FF4A934A</color>
+		<age>3m</age>
+		<recoveryTime>2016.07.28 17:03:05</recoveryTime>
+		<status>OK</status>
+		</xml>`)
 }
 
 func makeMsg(msg string) string {
 	//	根据json或xml文本创建消息体
+	log.Println("makeMsg：开始创建消息。")
 	var alter Alter
 	if msgInfo.Style == "xml" {
+		log.Println("makeMsg：来源消息格式为XML。")
 		err := xml.Unmarshal([]byte(msg), &alter)
 		if err != nil {
 			log.Fatal(err)
 		}
-
+	} else if msgInfo.Style == "json" {
+		log.Println("makeMsg：来源消息格式为Json。")
+		err := json.Unmarshal([]byte(msg), &alter)
+		if err != nil {
+			log.Fatal(err)
+		}
 	} else {
+		log.Println("makeMsg：未指定来源消息格式，默认使用Json解析。")
 		err := json.Unmarshal([]byte(msg), &alter)
 		if err != nil {
 			log.Fatal(err)
 		}
 	}
-	fmt.Printf("alter=%s", alter)
+	var dingMsg DingMsg
+	//给dingMsg各元素赋值
+	dingMsg.Touser = msgInfo.To
+	dingMsg.Agentid = msgInfo.Agentid
+	dingMsg.Msgtype = "oa"
+	dingMsg.Oa.MessageURL = msgInfo.Url
+	dingMsg.Oa.Head.Bgcolor = alter.Color
+	dingMsg.Oa.Body.Title = alter.Name
+	dingMsg.Oa.Body.Form[0].Key = "告警级别："
+	dingMsg.Oa.Body.Form[1].Key = "故障时间："
+	dingMsg.Oa.Body.Form[2].Key = "故障时长："
+	dingMsg.Oa.Body.Form[3].Key = "IP地址："
+	dingMsg.Oa.Body.Form[4].Key = "检测项："
+	dingMsg.Oa.Body.Form[0].Value = alter.Level
+	dingMsg.Oa.Body.Form[1].Value = alter.Time
+	dingMsg.Oa.Body.Form[2].Value = alter.Age
+	dingMsg.Oa.Body.Form[3].Value = alter.IP
+	dingMsg.Oa.Body.Form[4].Value = alter.Key
+	dingMsg.Oa.Body.Rich.Num = alter.Now
 	if alter.Status == "PROBLEM" {
-		var dingMsg DingMsg
-		dingMsg.Touser = msgInfo.To
-dingMsg.Agentid=msgInfo.Agentid
-dingMsg.Msgtype="oa"
-dingMsg.Oa.MessageURL=msgInfo.Url
-dingMsg.Oa.Head.Bgcolor=alter.Color
-dingMsg.Oa.Body.Title=alter.Name
-dingMsg.Oa.Body.Form=
-		JsonMsg := fmt.Sprintf(`
-		{
-		"touser":"%s",
-		"agentid":"%s",
- 		"msgtype": "oa",
-	     "oa": {
-	        "message_url": "%s",
-	        "head": {
-	            "bgcolor": "%s"
-	        },
-	        "body": {
-	            "title": "%s",
-	            "form": [
-	                {
-	                    "key": "告警级别：",
-	                    "value": "%s"
-	                },
-	                {
-	                    "key": "故障时间：",
-	                    "value": "%s"
-	                },
-					{
-	                    "key": "故障时长：",
-	                    "value": "%s"
-	                },
-					{
-	                    "key": "IP地址：",
-	                    "value": "%s"
-	                },
-
-	                {
-	                    "key": "检测项：",
-	                    "value": "%s"
-	                }
-	            ],
-	            "rich": {
-	                "num": "%s"
-	            },
-	            "content": "",
-	            "author": "[%s%s(%s)]"
-	        }
-	    }
-	}`,
-			msgInfo.To,
-			msgInfo.Agentid,
-			msgInfo.Url,
-			alter.Color,
-			alter.Name,
-			alter.Level,
-			alter.Time,
-			alter.Age,
-			alter.IP,
-			alter.Key,
-			alter.Now,
-			alter.From,
-			"故障",
-			alter.ID)
-
-		return JsonMsg
+		//  故障处理
+		dingMsg.Oa.Body.Author = fmt.Sprintf("[%s%s(%s)]", alter.From, "故障", alter.ID)
 	} else if alter.Status == "OK" {
-		JsonMsg := fmt.Sprintf(`
-{
-		"touser":"%s",
-		"agentid":"%s",
- 		"msgtype": "oa",
-	     "oa": {
-	        "message_url": "%s",
-	        "head": {
-	            "bgcolor": "%s"
-	        },
-	        "body": {
-	            "title": "%s",
-	            "form": [
-	                {
-	                    "key": "故障时间：",
-	                    "value": "%s"
-	                },
-	                {
-	                    "key": "恢复时间：",
-	                    "value": "%s"
-	                },
-					{
-	                    "key": "故障时长：",
-	                    "value": "%s"
-	                },
-					{
-	                    "key": "IP地址：",
-	                    "value": "%s"
-	                },
+		//  恢复处理
+		dingMsg.Oa.Body.Form[0].Key = "故障时间："
+		dingMsg.Oa.Body.Form[1].Key = "恢复时间："
+		dingMsg.Oa.Body.Form[0].Value = alter.Time
+		dingMsg.Oa.Body.Form[1].Value = alter.RecoveryTime
+		dingMsg.Oa.Body.Author = fmt.Sprintf("[%s%s(%s)]", alter.From, "恢复", alter.ID)
 
-	                {
-	                    "key": "检测项：",
-	                    "value": "%s"
-	                }
-	            ],
-	            "rich": {
-	                "num": "%s"
-	            },
-	            "content": "",
-	            "author": "[%s%s(%s)]"
-	        }
-	    }
-	}`,
-			msgInfo.To,
-			msgInfo.Agentid,
-			msgInfo.Url,
-			alter.Color,
-			alter.Name,
-			alter.Time,
-			alter.RecoveryTime,
-			alter.Age,
-			alter.IP,
-			alter.Key,
-			alter.Now,
-			alter.From,
-			"恢复",
-			alter.ID)
-
-		return JsonMsg
 	} else {
-		JsonMsg := fmt.Sprintf(`
-{
-		"touser":"%s",
-		"agentid":"%s",
- 		"msgtype": "oa",
-	     "oa": {
-	        "message_url": "%s",
-	        "head": {
-	            "bgcolor": "%s"
-	        },
-	        "body": {
-	            "title": "%s",
-	            "form": [
-	                {
-	                    "key": "告警级别：",
-	                    "value": "%s"
-	                },
-	                {
-	                    "key": "故障时间：",
-	                    "value": "%s"
-	                },
-					{
-	                    "key": "故障时长：",
-	                    "value": "%s"
-	                },
-					{
-	                    "key": "IP地址：",
-	                    "value": "%s"
-	                },
+		//  其他status状况处理
+		dingMsg.Oa.MessageURL = "http://www.qiansw.com/golang-zabbix-alter-to-dingding.html"
+		dingMsg.Oa.Body.Content = "ZABBIX动作配置有误，请至千思网[qiansw.com]或直接[点击此消息]查看具体配置文档。"
+		dingMsg.Oa.Body.Author = fmt.Sprintf("[%s%s(%s)]", alter.From, alter.Status, alter.ID)
 
-	                {
-	                    "key": "检测项：",
-	                    "value": "%s"
-	                }
-	            ],
-	            "rich": {
-	                "num": "%s"
-	            },
-	            "content": "ZABBIX动作配置有误，请至千思网（qiansw.com）查看具体配置文档。",
-	            "author": "[%s%s(%s)]"
-	        }
-	    }
-	}`,
-			msgInfo.To,
-			msgInfo.Agentid,
-			msgInfo.Url,
-			alter.Color,
-			alter.Name,
-			alter.Level,
-			alter.Time,
-			alter.Age,
-			alter.IP,
-			alter.Key,
-			alter.Now,
-			alter.From,
-			alter.Status,
-			alter.ID)
-
-		return JsonMsg
 	}
+	//	创建post给钉钉的Json文本
+	JsonMsg, err := json.Marshal(dingMsg)
+	if err != nil {
+		log.Fatal(err)
+	}
+	return string(JsonMsg)
 }
 
 func getToken(corpid, corpsecret string) (token string) { //根据id和secret获取AccessToken
@@ -356,13 +221,11 @@ func sendMsg(token, msg string) (status bool) { //发送OA消息，,返回成功
 		log.Fatal(err)
 		return
 	}
-
-	fmt.Printf("%s", result)
+	log.Printf("[sendMsg] 钉钉接口返回消息：%s\r\n", result)
 
 	return
 }
 
 func main() {
-	fmt.Print(makeMsg(msgInfo.Msg))
 	sendMsg(getToken(msgInfo.Corpid, msgInfo.Corpsecret), makeMsg(msgInfo.Msg))
 }
