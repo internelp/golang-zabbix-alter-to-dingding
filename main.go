@@ -74,22 +74,22 @@ func init() {
 	flag.Parse()
 	log.Println("Init：初始化完成。")
 	//	msgInfo.Msg = fmt.Sprint(`
-	//		<?xml version="1.0" encoding="UTF-8" ?>
-	//		<xml>
-	//		<from>千思网</from>
-	//		<time>2016.07.28 17:00:05</time>
-	//		<level>Warning</level>
-	//		<name>这是一个千思网（qiansw.com）提供的ZABBIX"钉钉"报警插件。</name>
-	//		<key>icmpping</key>
-	//		<value>30ms</value>
-	//		<now>56ms</now>
-	//		<id>1637</id>
-	//		<ip>8.8.8.8</ip>
-	//		<color>FF4A934A</color>
-	//		<age>3m</age>
-	//		<recoveryTime>2016.07.28 17:03:05</recoveryTime>
-	//		<status>OK</status>
-	//		</xml>`)
+	//			<?xml version="1.0" encoding="UTF-8" ?>
+	//			<xml>
+	//			<from>千思网</from>
+	//			<time>2016.07.28 17:00:05</time>
+	//			<level>Warning</level>
+	//			<name>这是一个千思网（qiansw.com）提供的ZABBIX"钉钉"报警插件。</name>
+	//			<key>icmpping</key>
+	//			<value>30ms</value>
+	//			<now>56ms</now>
+	//			<id>1637</id>
+	//			<ip>8.8.8.8</ip>
+	//			<color>FF4A934A</color>
+	//			<age>3m</age>
+	//			<recoveryTime>2016.07.28 17:03:05</recoveryTime>
+	//			<status>OK</status>
+	//			</xml>`)
 }
 
 func makeMsg(msg string) string {
@@ -136,20 +136,20 @@ func makeMsg(msg string) string {
 	dingMsg.Oa.Body.Rich.Num = alter.Now
 	if alter.Status == "PROBLEM" {
 		//  故障处理
-		dingMsg.Oa.Body.Author = fmt.Sprintf("[%s%s(%s)]", alter.From, "故障", alter.ID)
+		dingMsg.Oa.Body.Author = fmt.Sprintf("[%s·%s(%s)]", alter.From, "故障", alter.ID)
 	} else if alter.Status == "OK" {
 		//  恢复处理
 		dingMsg.Oa.Body.Form[0].Key = "故障时间："
 		dingMsg.Oa.Body.Form[1].Key = "恢复时间："
 		dingMsg.Oa.Body.Form[0].Value = alter.Time
 		dingMsg.Oa.Body.Form[1].Value = alter.RecoveryTime
-		dingMsg.Oa.Body.Author = fmt.Sprintf("[%s%s(%s)]", alter.From, "恢复", alter.ID)
+		dingMsg.Oa.Body.Author = fmt.Sprintf("[%s·%s(%s)]", alter.From, "恢复", alter.ID)
 
 	} else {
 		//  其他status状况处理
 		dingMsg.Oa.MessageURL = "http://www.qiansw.com/golang-zabbix-alter-to-dingding.html"
 		dingMsg.Oa.Body.Content = "ZABBIX动作配置有误，请至千思网[qiansw.com]或直接[点击此消息]查看具体配置文档。"
-		dingMsg.Oa.Body.Author = fmt.Sprintf("[%s%s(%s)]", alter.From, alter.Status, alter.ID)
+		dingMsg.Oa.Body.Author = fmt.Sprintf("[%s·%s(%s)]", alter.From, alter.Status, alter.ID)
 
 	}
 	//	创建post给钉钉的Json文本
