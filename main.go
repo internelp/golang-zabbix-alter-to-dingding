@@ -70,26 +70,26 @@ func init() {
 	flag.StringVar(&msgInfo.Corpsecret, "corpsecret", "", "CorpSecret，可以在钉钉后台查看，不可空。")
 	flag.StringVar(&msgInfo.Msg, "msg", `{ "from": "千思网", "time": "2016.07.28 17:00:05", "level": "Warning", "name": "这是一个千思网（qiansw.com）提供的ZABBIX钉钉报警插件。", "key": "icmpping", "value": "30ms", "now": "56ms", "id": "1637", "ip": "8.8.8.8", "color":"FF4A934A", "age":"3m", "recoveryTime":"2016.07.28 17:03:05", "status":"OK" }`, "Json格式的文本消息内容，不可空。")
 	flag.StringVar(&msgInfo.Url, "url", "http://www.qiansw.com/golang-zabbix-alter-to-dingding.html", "消息内容点击后跳转到的URL，可空。")
-	flag.StringVar(&msgInfo.Style, "style", "json", "Msg的格式，可选json和xml，可空。")
+	flag.StringVar(&msgInfo.Style, "style", "json", "Msg的格式，可选json和xml，推荐使用xml（支持消息中含双引号），可空。")
 	flag.Parse()
 	log.Println("Init：初始化完成。")
-	msgInfo.Msg = fmt.Sprint(`
-		<?xml version="1.0" encoding="UTF-8" ?>
-		<xml>
-		<from>千思网</from>
-		<time>2016.07.28 17:00:05</time>
-		<level>Warning</level>
-		<name>这是一个千思网（qiansw.com）提供的ZABBIX"钉钉"报警插件。</name>
-		<key>icmpping</key>
-		<value>30ms</value>
-		<now>56ms</now>
-		<id>1637</id>
-		<ip>8.8.8.8</ip>
-		<color>FF4A934A</color>
-		<age>3m</age>
-		<recoveryTime>2016.07.28 17:03:05</recoveryTime>
-		<status>OK</status>
-		</xml>`)
+	//	msgInfo.Msg = fmt.Sprint(`
+	//		<?xml version="1.0" encoding="UTF-8" ?>
+	//		<xml>
+	//		<from>千思网</from>
+	//		<time>2016.07.28 17:00:05</time>
+	//		<level>Warning</level>
+	//		<name>这是一个千思网（qiansw.com）提供的ZABBIX"钉钉"报警插件。</name>
+	//		<key>icmpping</key>
+	//		<value>30ms</value>
+	//		<now>56ms</now>
+	//		<id>1637</id>
+	//		<ip>8.8.8.8</ip>
+	//		<color>FF4A934A</color>
+	//		<age>3m</age>
+	//		<recoveryTime>2016.07.28 17:03:05</recoveryTime>
+	//		<status>OK</status>
+	//		</xml>`)
 }
 
 func makeMsg(msg string) string {
