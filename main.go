@@ -135,6 +135,19 @@ func makeMsg(msg string) string {
 		dingMsg.Oa.Body.Form[1].Value = alter.RecoveryTime
 		dingMsg.Oa.Body.Author = fmt.Sprintf("[%s·%s(%s)]", alter.From, "恢复", alter.ID)
 
+	} else if alter.Status == "msg" {
+		dingMsg.Oa.Body.Title = alter.Name
+		dingMsg.Oa.Body.Form[0].Key = ""
+		dingMsg.Oa.Body.Form[1].Key = ""
+		dingMsg.Oa.Body.Form[2].Key = ""
+		dingMsg.Oa.Body.Form[3].Key = ""
+		dingMsg.Oa.Body.Form[4].Key = ""
+		dingMsg.Oa.Body.Form[0].Value = ""
+		dingMsg.Oa.Body.Form[1].Value = ""
+		dingMsg.Oa.Body.Form[2].Value = ""
+		dingMsg.Oa.Body.Form[3].Value = ""
+		dingMsg.Oa.Body.Form[4].Value = ""
+		dingMsg.Oa.Body.Content = alter.Acknowledgementhistory
 	} else {
 		//  其他status状况处理
 		dingMsg.Oa.MessageURL = "http://www.qiansw.com/golang-zabbix-alter-to-dingding.html"
