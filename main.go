@@ -1,8 +1,8 @@
 package main
 
 //执行方式：
-//alter -to=接收人 -agent=应用id	-color=消息头部颜色	-corpid=corpid		   -corpsecret=corpsecret
-//alter -to=@all  -agent=29481187 -color=FFE61A1A 	-corpid=dingd123465865 -corpsecret=zC5Jbed9S
+//alert -to=接收人 -agent=应用id	-color=消息头部颜色	-corpid=corpid		   -corpsecret=corpsecret
+//alert -to=@all  -agent=29481187 -color=FFE61A1A 	-corpid=dingd123465865 -corpsecret=zC5Jbed9S
 //CorpID和CorpSecret可以在钉钉后台找到
 import (
 	"bytes"
@@ -24,7 +24,7 @@ type MsgInfo struct {
 
 var msgInfo MsgInfo
 
-type Alter struct {
+type Alert struct {
 	From                   string `json:"from" xml:"from"`
 	Time                   string `json:"time" xml:"time"`
 	Level                  string `json:"level" xml:"level"`
@@ -35,6 +35,7 @@ type Alter struct {
 	ID                     string `json:"id" xml:"id"`
 	IP                     string `json:"ip" xml:"ip"`
 	Color                  string `json:"color" xml:"color"`
+	Url                    string `json:"url" xml:"url"`
 	Age                    string `json:"age" xml:"age"`
 	Status                 string `json:"status" xml:"status"`
 	RecoveryTime           string `json:"recoveryTime" xml:"recoveryTime"`
@@ -81,22 +82,22 @@ func init() {
 func makeMsg(msg string) string {
 	//	根据json或xml文本创建消息体
 	log.Println("[makeMsg] 开始创建消息。")
-	var alter Alter
+	var alert Alert
 	if msgInfo.Style == "xml" {
 		log.Println("[makeMsg] 来源消息格式为XML。")
-		err := xml.Unmarshal([]byte(msg), &alter)
+		err := xml.Unmarshal([]byte(msg), &alert)
 		if err != nil {
 			log.Fatal(err)
 		}
 	} else if msgInfo.Style == "json" {
 		log.Println("[makeMsg] 来源消息格式为Json。")
-		err := json.Unmarshal([]byte(msg), &alter)
+		err := json.Unmarshal([]byte(msg), &alert)
 		if err != nil {
 			log.Fatal(err)
 		}
 	} else {
 		log.Println("[makeMsg] 未指定来源消息格式，默认使用Json解析。")
-		err := json.Unmarshal([]byte(msg), &alter)
+		err := json.Unmarshal([]byte(msg), &alert)
 		if err != nil {
 			log.Fatal(err)
 		}
@@ -108,35 +109,38 @@ func makeMsg(msg string) string {
 	dingMsg.Agentid = msgInfo.Agentid
 	dingMsg.Msgtype = "oa"
 	dingMsg.Oa.MessageURL = msgInfo.Url
-	dingMsg.Oa.Head.Bgcolor = alter.Color
-	dingMsg.Oa.Body.Title = alter.Name
+	if alert.Url != "" {
+		dingMsg.Oa.MessageURL = alert.Url
+	}
+	dingMsg.Oa.Head.Bgcolor = alert.Color
+	dingMsg.Oa.Body.Title = alert.Name
 	dingMsg.Oa.Body.Form[0].Key = "告警级别："
 	dingMsg.Oa.Body.Form[1].Key = "故障时间："
 	dingMsg.Oa.Body.Form[2].Key = "故障时长："
 	dingMsg.Oa.Body.Form[3].Key = "IP地址："
 	dingMsg.Oa.Body.Form[4].Key = "检测项："
-	dingMsg.Oa.Body.Form[0].Value = alter.Level
-	dingMsg.Oa.Body.Form[1].Value = alter.Time
-	dingMsg.Oa.Body.Form[2].Value = alter.Age
-	dingMsg.Oa.Body.Form[3].Value = alter.IP
-	dingMsg.Oa.Body.Form[4].Value = alter.Key
-	dingMsg.Oa.Body.Rich.Num = alter.Now
-	if alter.Status == "PROBLEM" {
+	dingMsg.Oa.Body.Form[0].Value = alert.Level
+	dingMsg.Oa.Body.Form[1].Value = alert.Time
+	dingMsg.Oa.Body.Form[2].Value = alert.Age
+	dingMsg.Oa.Body.Form[3].Value = alert.IP
+	dingMsg.Oa.Body.Form[4].Value = alert.Key
+	dingMsg.Oa.Body.Rich.Num = alert.Now
+	if alert.Status == "PROBLEM" {
 		//  故障处理
-		dingMsg.Oa.Body.Author = fmt.Sprintf("[%s·%s(%s)]", alter.From, "故障", alter.ID)
-		if strings.Replace(alter.Acknowledgement, " ", "", -1) == "Yes" {
-			dingMsg.Oa.Body.Content = "故障已经被确认，" + alter.Acknowledgementhistory
+		dingMsg.Oa.Body.Author = fmt.Sprintf("[%s·%s(%s)]", alert.From, "故障", alert.ID)
+		if strings.Replace(alert.Acknowledgement, " ", "", -1) == "Yes" {
+			dingMsg.Oa.Body.Content = "故障已经被确认，" + alert.Acknowledgementhistory
 		}
-	} else if alter.Status == "OK" {
+	} else if alert.Status == "OK" {
 		//  恢复处理
 		dingMsg.Oa.Body.Form[0].Key = "故障时间："
 		dingMsg.Oa.Body.Form[1].Key = "恢复时间："
-		dingMsg.Oa.Body.Form[0].Value = alter.Time
-		dingMsg.Oa.Body.Form[1].Value = alter.RecoveryTime
-		dingMsg.Oa.Body.Author = fmt.Sprintf("[%s·%s(%s)]", alter.From, "恢复", alter.ID)
+		dingMsg.Oa.Body.Form[0].Value = alert.Time
+		dingMsg.Oa.Body.Form[1].Value = alert.RecoveryTime
+		dingMsg.Oa.Body.Author = fmt.Sprintf("[%s·%s(%s)]", alert.From, "恢复", alert.ID)
 
-	} else if alter.Status == "msg" {
-		dingMsg.Oa.Body.Title = alter.Name
+	} else if alert.Status == "msg" {
+		dingMsg.Oa.Body.Title = alert.Name
 		dingMsg.Oa.Body.Form[0].Key = ""
 		dingMsg.Oa.Body.Form[1].Key = ""
 		dingMsg.Oa.Body.Form[2].Key = ""
@@ -147,14 +151,14 @@ func makeMsg(msg string) string {
 		dingMsg.Oa.Body.Form[2].Value = ""
 		dingMsg.Oa.Body.Form[3].Value = ""
 		dingMsg.Oa.Body.Form[4].Value = ""
-		dingMsg.Oa.Body.Content = alter.Acknowledgementhistory
+		dingMsg.Oa.Body.Content = alert.Acknowledgementhistory
 	} else {
 		//  其他status状况处理
 		dingMsg.Oa.MessageURL = "http://www.qiansw.com/golang-zabbix-alter-to-dingding.html"
 		dingMsg.Oa.Body.Content = "ZABBIX动作配置有误，请至千思网[qiansw.com]或直接[点击此消息]查看具体配置文档。"
-		dingMsg.Oa.Body.Author = fmt.Sprintf("[%s·%s(%s)]", alter.From, alter.Status, alter.ID)
-		if strings.Replace(alter.Acknowledgement, " ", "", -1) == "Yes" {
-			dingMsg.Oa.Body.Content = "故障已经被确认，" + alter.Acknowledgementhistory
+		dingMsg.Oa.Body.Author = fmt.Sprintf("[%s·%s(%s)]", alert.From, alert.Status, alert.ID)
+		if strings.Replace(alert.Acknowledgement, " ", "", -1) == "Yes" {
+			dingMsg.Oa.Body.Content = "故障已经被确认，" + alert.Acknowledgementhistory
 		}
 	}
 	//	创建post给钉钉的Json文本
