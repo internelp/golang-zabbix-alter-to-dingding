@@ -118,12 +118,14 @@ func makeMsg(msg string) string {
 	dingMsg.Oa.Body.Form[1].Key = "故障时间："
 	dingMsg.Oa.Body.Form[2].Key = "故障时长："
 	dingMsg.Oa.Body.Form[3].Key = "IP地址："
-	dingMsg.Oa.Body.Form[4].Key = "检测项："
+	dingMsg.Oa.Body.Form[4].Key = "告警项目："
+	dingMsg.Oa.Body.Form[5].Key = "事件ID："
 	dingMsg.Oa.Body.Form[0].Value = alert.Level
 	dingMsg.Oa.Body.Form[1].Value = alert.Time
 	dingMsg.Oa.Body.Form[2].Value = alert.Age
 	dingMsg.Oa.Body.Form[3].Value = alert.IP
 	dingMsg.Oa.Body.Form[4].Value = alert.Key
+	dingMsg.Oa.Body.Form[5].Value = alert.ID
 	dingMsg.Oa.Body.Rich.Num = alert.Now
 	if alert.Status == "PROBLEM" {
 		//  故障处理
@@ -154,8 +156,8 @@ func makeMsg(msg string) string {
 		dingMsg.Oa.Body.Content = alert.Acknowledgementhistory
 	} else {
 		//  其他status状况处理
-		dingMsg.Oa.MessageURL = "http://www.qiansw.com/golang-zabbix-alter-to-dingding.html"
-		dingMsg.Oa.Body.Content = "ZABBIX动作配置有误，请至千思网[qiansw.com]或直接[点击此消息]查看具体配置文档。"
+		//dingMsg.Oa.MessageURL = "http://www.qiansw.com/golang-zabbix-alter-to-dingding.html"
+		dingMsg.Oa.Body.Content = "ZABBIX动作配置有误"
 		dingMsg.Oa.Body.Author = fmt.Sprintf("[%s·%s(%s)]", alert.From, alert.Status, alert.ID)
 		if strings.Replace(alert.Acknowledgement, " ", "", -1) == "Yes" {
 			dingMsg.Oa.Body.Content = "故障已经被确认，" + alert.Acknowledgementhistory
