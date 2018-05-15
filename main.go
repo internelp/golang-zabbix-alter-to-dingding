@@ -110,7 +110,7 @@ func init() {
 	date := time.Now().Format("2006-01-02")
 
 	if logPath != "" {
-		fname := fmt.Sprintf("%s/deploy_%s.log", logPath, date)
+		fname := fmt.Sprintf("%s/zabbix_to_dingding_%s.log", logPath, date)
 		logfile, err := os.OpenFile(fname, os.O_CREATE|os.O_WRONLY|os.O_APPEND, 0644)
 		defer logfile.Close()
 		if err != nil {
