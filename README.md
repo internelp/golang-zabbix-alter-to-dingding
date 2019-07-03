@@ -9,5 +9,10 @@ zabbix报警到钉钉
 	2017-01-09 13:08		增加了对消息内 url 字段支持。
 	2017-09-19 13:55		完善了log，可以记录到文件；支持了 zabbix 3.4 中恢复消息状态 “RESOLVED”。
 
-##### 未实现的功能
-- 禁止要求非空参数的提醒
+## 更新
+
+现在可以使用 zabbix 手机客户端 zCate 来接收 zabbix 的告警消息了：https://www.qiansw.com/how-to-use-zcate-to-receive-zabbix-alarm-messages.html
+
+下面是效果图：
+
+![图片预览](https://cache.img.qiansw.com:1443/usr/uploads/2019/06/3437100109.jpg)
